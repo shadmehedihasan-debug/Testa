@@ -59,7 +59,7 @@
   {
     "q": "Is my personal information secure?",
     "exact": true,
-    "alt": ["is my data safe", "privacy policy", "do you sell my data", "is my card information protected"],
+    "alt": ["is my data safe", "privacy policy", "do you share my data", "is my card information protected"],
     "a": "Yes. We use SSL encryption and never sell or share your personal data with third parties."
   }
 ]

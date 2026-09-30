@@ -19,7 +19,7 @@ from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from faq_data import FALLBACK, answer_parts, load_faqs, log_interaction
+from faq_data import FALLBACK, SMALLTALK, answer_parts, load_faqs, log_interaction, small_talk
 
 for pkg in ("punkt", "punkt_tab", "stopwords", "wordnet", "omw-1.4"):
     nltk.download(pkg, quiet=True)  # one-time download; skipped if already installed
@@ -60,6 +60,9 @@ class FAQChatbot:
         """Return (answer, matched_question, score). `history` is accepted but unused in this mode."""
         if not user_input.strip():
             return "Please type a question so I can help!", None, 0.0
+        reply = small_talk(user_input)
+        if reply:
+            return reply, SMALLTALK, 1.0
         return answer_parts(user_input, self._single)
 
 

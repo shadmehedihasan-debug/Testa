@@ -18,6 +18,7 @@ LOG_DIR = BASE / "logs"
 CHAT_LOG = LOG_DIR / "chat_log.csv"
 FEEDBACK_LOG = LOG_DIR / "feedback.csv"
 
+SMALLTALK = "Small talk"  # label used instead of an FAQ name for greetings etc.
 FALLBACK = "Sorry, I couldn't find an answer to that. Try rephrasing, or contact support@example.com."
 
 
@@ -36,6 +37,30 @@ def load_faqs(path=FAQ_FILE):
 def all_questions(faq):
     """The main question plus every alternative wording."""
     return [faq["q"]] + list(faq["alt"])
+
+
+# ------------------------------------------------------------ small talk
+_SMALL_TALK = [
+    (r"(?:hi|hello|hey|hiya|yo|hola|salam|assalamu ?alaikum|good (?:morning|afternoon|evening))"
+     r"(?: there| bot| again| all| everyone| team| sir| madam)?",
+     "Hello! I can help with orders, shipping, returns, payments and your account. What would you like to know?"),
+    (r"(?:are )?(?:you|u) (?:there|here|online|alive)|(?:is )?anyone (?:there|here)",
+     "Yes, I'm here! Ask me anything about orders, shipping, returns or payments."),
+    (r"(?:ok )?(?:thanks|thank you|thank u|thx|cheers)(?: a lot| so much| very much)?",
+     "You're welcome! Let me know if you need anything else."),
+    (r"bye|goodbye|see you|see ya|good night", "Goodbye! Come back any time."),
+    (r"who are you|what are you|what can you do|what do you do|your name|what is your name|what's your name|help|help me|i need help",
+     "I'm the store's help assistant. I answer questions about orders, shipping, returns, payments and your account from our FAQ."),
+]
+
+
+def small_talk(text):
+    """Reply for greetings / thanks / 'are you there?' etc. Returns None for real questions."""
+    t = re.sub(r"\s+", " ", re.sub(r"[^a-z\s']", " ", text.lower())).strip()
+    for pattern, reply in _SMALL_TALK:
+        if re.fullmatch(pattern, t):
+            return reply
+    return None
 
 
 # ------------------------------------------------ multi-question support
