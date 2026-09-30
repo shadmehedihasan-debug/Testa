@@ -1,7 +1,7 @@
 """Chat UI (Streamlit).  Run with:  streamlit run app.py"""
 import streamlit as st
 
-from faq_data import log_feedback, log_interaction
+from faq_data import SMALLTALK, log_feedback, log_interaction
 
 st.set_page_config(page_title="FAQ Chatbot", page_icon="🤖")
 st.title("🤖 FAQ Chatbot")
@@ -10,6 +10,7 @@ MODES = {
     "Basic (TF-IDF keywords)": "tfidf",
     "Semantic (embeddings)": "semantic",
     "AI (Claude + memory)": "llm",
+    "AI: answer anything (Claude)": "llm_open",
 }
 mode = MODES[st.sidebar.radio("Bot mode", list(MODES))]
 st.sidebar.caption(
@@ -17,6 +18,7 @@ st.sidebar.caption(
         "tfidf": "Matches shared words. Fast, no downloads.",
         "semantic": "Matches meaning, e.g. 'money back' finds the refund FAQ.",
         "llm": "Finds the best FAQs, then Claude writes a natural reply and remembers the chat. Needs ANTHROPIC_API_KEY.",
+        "llm_open": "Uses the FAQs when they apply and answers everything else from Claude's general knowledge, clearly labelled. Needs ANTHROPIC_API_KEY.",
     }[mode]
 )
 st.sidebar.caption("Chats and 👍/👎 ratings are saved to the logs/ folder. Run `python review_log.py` to see failures.")
@@ -30,7 +32,7 @@ def load_bot(mode: str):
         from chatbot import FAQChatbot
         return FAQChatbot()
     from ai_chatbot import LLMFAQBot, SemanticFAQBot
-    return SemanticFAQBot() if mode == "semantic" else LLMFAQBot()
+    return SemanticFAQBot() if mode == "semantic" else LLMFAQBot(open_domain=(mode == "llm_open"))
 
 
 try:
@@ -74,7 +76,7 @@ if prompt := st.chat_input("Type your question..."):
 
     rid = log_interaction(mode, prompt, answer, matched_q, score)
     reply = answer
-    if matched_q and mode != "llm":  # AI replies already end with their own Sources line
+    if matched_q and matched_q != SMALLTALK and mode not in ("llm", "llm_open"):  # AI replies already end with their own Sources line
         reply += f"\n\n*Top FAQ: {matched_q} (similarity {score:.2f})*"
     st.session_state.messages.append({"role": "assistant", "content": reply, "raw": answer, "id": rid})
     st.rerun()

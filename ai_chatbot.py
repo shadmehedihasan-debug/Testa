@@ -16,7 +16,8 @@ import os
 
 import numpy as np
 
-from faq_data import FALLBACK, all_questions, answer_parts, load_faqs, log_interaction, split_questions
+from faq_data import (FALLBACK, SMALLTALK, all_questions, answer_parts, load_faqs, log_interaction,
+                      small_talk, split_questions)
 
 FAQS = load_faqs()
 
@@ -67,6 +68,9 @@ class SemanticFAQBot:
     def get_response(self, user_input: str, history=None):
         if not user_input.strip():
             return "Please type a question so I can help!", None, 0.0
+        reply = small_talk(user_input)
+        if reply:
+            return reply, SMALLTALK, 1.0
         return answer_parts(user_input, self._single)
 
 
@@ -83,9 +87,32 @@ Answer the customer's question using ONLY the FAQ entries provided below.
 - Never invent policies, prices, or timeframes that aren't in the FAQs."""
 
 
+GENERAL_PROMPT = """You are a helpful assistant in an online store's help chat.
+The customer asked something our FAQ does not cover. Answer helpfully, accurately and concisely using general knowledge.
+- Never invent store-specific facts (policies, prices, stock, delivery times, account details). If the question depends on
+  them, say you don't have that information and suggest emailing support@example.com.
+- If you are not sure about something, say so instead of guessing."""
+
+GENERAL_NOTE = "*General answer, not from our FAQ. Please double-check anything important.*"
+
+SYSTEM_PROMPT_OPEN = SYSTEM_PROMPT.replace(
+    "Answer the customer's question using ONLY the FAQ entries provided below.",
+    "Answer the customer's question using the FAQ entries below wherever they apply.",
+).replace(
+    "- If the FAQs don't cover the question (or part of it), say so politely and suggest emailing support@example.com.",
+    "- For any part the FAQs don't cover, answer from general knowledge on a separate line starting with "
+    "'General answer (not from our FAQ):'. Never invent store-specific facts (policies, prices, timeframes); "
+    "for those, say you don't have that information and suggest emailing support@example.com.",
+)
+assert SYSTEM_PROMPT_OPEN != SYSTEM_PROMPT
+
+
 class LLMFAQBot:
+    """open_domain=False: only answers from the FAQs.  open_domain=True: answers ANY question,
+    using the FAQs where they apply and clearly labelled general knowledge otherwise."""
+
     def __init__(self, faqs=FAQS, retriever: "SemanticFAQBot | None" = None, top_k: int = 3,
-                 gate: float = CONFIDENCE_GATE):
+                 gate: float = CONFIDENCE_GATE, open_domain: bool = False):
         import anthropic
 
         if not os.environ.get("ANTHROPIC_API_KEY"):
@@ -94,6 +121,7 @@ class LLMFAQBot:
         self.retriever = retriever or SemanticFAQBot(faqs)
         self.top_k = top_k
         self.gate = gate
+        self.open_domain = open_domain
 
     def _retrieval_query(self, user_input: str, history) -> str:
         # Short follow-ups ("what about international?") lack context, so add the last user turn.
@@ -114,18 +142,34 @@ class LLMFAQBot:
                     merged[faq["q"]] = (faq, score)
         return sorted(merged.values(), key=lambda h: h[1], reverse=True)
 
+    def _general(self, user_input: str, history) -> str:
+        """Answer outside the FAQ with general knowledge (open_domain mode only)."""
+        messages = [{"role": m["role"], "content": m["content"]} for m in history[-8:]]
+        messages.append({"role": "user", "content": user_input})
+        resp = self.client.messages.create(
+            model=LLM_MODEL, max_tokens=700, temperature=0, system=GENERAL_PROMPT, messages=messages
+        )
+        answer = "".join(b.text for b in resp.content if b.type == "text")
+        return f"{answer}\n\n{GENERAL_NOTE}"
+
     def get_response(self, user_input: str, history=None):
         """history: list of {"role": "user"|"assistant", "content": str} from earlier turns."""
         if not user_input.strip():
             return "Please type a question so I can help!", None, 0.0
         history = history or []
 
+        reply = small_talk(user_input)  # greetings need no LLM call
+        if reply:
+            return reply, SMALLTALK, 1.0
+
         hits = self._retrieve(self._retrieval_query(user_input, history))
         best_faq, best_score = hits[0]
 
         # Safeguard 1: confidence gate - not similar enough to anything, so don't let the LLM guess.
         if best_score < self.gate:
-            return FALLBACK, None, best_score
+            if not self.open_domain:
+                return FALLBACK, None, best_score
+            return self._general(user_input, history), None, best_score
 
         # Safeguard 2: a single high-stakes question is answered with the original text, no rewriting.
         if len(split_questions(user_input)) == 1 and best_faq.get("exact") and best_score >= EXACT_MATCH_SCORE:
@@ -141,7 +185,7 @@ class LLMFAQBot:
             model=LLM_MODEL,
             max_tokens=500,
             temperature=0,  # Safeguard 3: least creative = least likely to embellish
-            system=f"{SYSTEM_PROMPT}\n\nFAQ ENTRIES:\n{context}",
+            system=f"{SYSTEM_PROMPT_OPEN if self.open_domain else SYSTEM_PROMPT}\n\nFAQ ENTRIES:\n{context}",
             messages=messages,
         )
         answer = "".join(b.text for b in resp.content if b.type == "text")
@@ -152,13 +196,13 @@ class LLMFAQBot:
 
 
 # --------------------------------------------------------------------------
-# Terminal demo:  python ai_chatbot.py [semantic|llm]
+# Terminal demo:  python ai_chatbot.py [semantic|llm|llm_open]
 # --------------------------------------------------------------------------
 if __name__ == "__main__":
     import sys
 
     mode = sys.argv[1] if len(sys.argv) > 1 else "llm"
-    bot = LLMFAQBot() if mode == "llm" else SemanticFAQBot()
+    bot = LLMFAQBot(open_domain=(mode == "llm_open")) if mode.startswith("llm") else SemanticFAQBot()
     history = []
     print(f"🤖 FAQ Bot ({mode} mode). Type 'quit' to exit.\n")
     while True:
