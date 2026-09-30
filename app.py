@@ -1,4 +1,6 @@
 """Chat UI (Streamlit).  Run with:  streamlit run app.py"""
+import os
+
 import streamlit as st
 
 from faq_data import SMALLTALK, log_feedback, log_interaction
@@ -12,7 +14,14 @@ MODES = {
     "AI (Claude + memory)": "llm",
     "AI: answer anything (Claude)": "llm_open",
 }
-mode = MODES[st.sidebar.radio("Bot mode", list(MODES))]
+# Streamlit Cloud: make the key from Settings -> Secrets available to the bots
+try:
+    if "ANTHROPIC_API_KEY" in st.secrets:
+        os.environ["ANTHROPIC_API_KEY"] = st.secrets["ANTHROPIC_API_KEY"]
+except Exception:
+    pass
+
+mode = MODES[st.sidebar.radio("Bot mode", list(MODES), index=3)]  # default: answer anything
 st.sidebar.caption(
     {
         "tfidf": "Matches shared words. Fast, no downloads.",
@@ -40,6 +49,8 @@ try:
         bot = load_bot(mode)
 except Exception as e:  # missing package / API key
     st.error(f"Couldn't start this mode: {e}")
+    st.info("To answer any question, add your key in the app's Settings -> Secrets:  "
+            'ANTHROPIC_API_KEY = "your-key".  Meanwhile, pick "Basic" in the sidebar (FAQ answers only).')
     st.stop()
 
 if not st.session_state.get("messages"):

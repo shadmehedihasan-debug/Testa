@@ -247,7 +247,7 @@ function getResponse(text){
     const typing=botRow("").querySelector(".bubble"); typing.innerHTML='<span class="dots"><i></i><i></i><i></i></span>';
     setTimeout(async()=>{
       let r=getResponse(text);
-      if(!r.matched){ const g=await general(text); if(g) r={answer:g,matched:null,score:r.score,general:true}; }
+      if(!r.matched||r.smalltalk){ const g=await general(text); if(g) r={answer:g,matched:null,score:r.score,general:true}; }
       typing.closest(".row").remove();
       const id=Math.random().toString(36).slice(2,10);
       store.push({id,time:new Date().toISOString(),question:text,answer:r.answer,matched:r.matched||"",score:r.score.toFixed(3),answered:r.matched?"yes":"no",rating:""});

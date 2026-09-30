@@ -88,7 +88,8 @@ Answer the customer's question using ONLY the FAQ entries provided below.
 
 
 GENERAL_PROMPT = """You are a helpful assistant in an online store's help chat.
-The customer asked something our FAQ does not cover. Answer helpfully, accurately and concisely using general knowledge.
+The customer asked something our FAQ does not cover. Answer ANY question helpfully, accurately and concisely using general
+knowledge. If the message is a greeting or casual chat, reply naturally and friendly, and offer to help.
 - Never invent store-specific facts (policies, prices, stock, delivery times, account details). If the question depends on
   them, say you don't have that information and suggest emailing support@example.com.
 - If you are not sure about something, say so instead of guessing."""
@@ -158,9 +159,10 @@ class LLMFAQBot:
             return "Please type a question so I can help!", None, 0.0
         history = history or []
 
-        reply = small_talk(user_input)  # greetings need no LLM call
-        if reply:
-            return reply, SMALLTALK, 1.0
+        if not self.open_domain:  # in "answer anything" mode Claude handles greetings and chit-chat itself
+            reply = small_talk(user_input)
+            if reply:
+                return reply, SMALLTALK, 1.0
 
         hits = self._retrieve(self._retrieval_query(user_input, history))
         best_faq, best_score = hits[0]
