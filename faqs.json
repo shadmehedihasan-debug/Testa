@@ -1,0 +1,65 @@
+[
+  {
+    "q": "How can I track my order?",
+    "alt": ["order status", "where is my order", "track my package", "when will my order arrive"],
+    "a": "Go to 'My Orders' in your account and click 'Track Package'. You'll also receive a tracking link by email once your order ships."
+  },
+  {
+    "q": "What is your return policy?",
+    "exact": true,
+    "alt": ["can I send an item back", "how do returns work", "exchange or return an item", "return window"],
+    "a": "You can return most items within 30 days of delivery for a full refund, as long as they are unused and in their original packaging."
+  },
+  {
+    "q": "How long does shipping take?",
+    "alt": ["delivery time", "how many days for delivery", "when will it be delivered", "shipping speed"],
+    "a": "Standard shipping takes 3-7 business days. Express shipping takes 1-2 business days."
+  },
+  {
+    "q": "Do you ship internationally?",
+    "alt": ["deliver abroad", "shipping to other countries", "overseas delivery", "do you ship outside the country"],
+    "a": "Yes! We ship to over 50 countries. International delivery usually takes 7-14 business days."
+  },
+  {
+    "q": "What payment methods do you accept?",
+    "alt": ["how can I pay", "do you take PayPal", "accepted credit cards", "can I pay with Apple Pay"],
+    "a": "We accept Visa, Mastercard, American Express, PayPal, Apple Pay, and Google Pay."
+  },
+  {
+    "q": "How do I cancel my order?",
+    "alt": ["cancel a purchase", "I changed my mind about my order", "stop my order"],
+    "a": "Orders can be cancelled within 1 hour of purchase from the 'My Orders' page. After that, please contact support."
+  },
+  {
+    "q": "How do I reset my password?",
+    "alt": ["forgot my password", "I can't log in", "change my password", "locked out of my account"],
+    "a": "Click 'Forgot Password' on the login page and enter your email. We'll send you a link to create a new password."
+  },
+  {
+    "q": "How can I contact customer support?",
+    "alt": ["talk to a human", "customer service phone or email", "speak to an agent", "support hours"],
+    "a": "Email support@example.com or use live chat, available 9am-6pm, Monday to Friday."
+  },
+  {
+    "q": "Can I change my shipping address after ordering?",
+    "alt": ["update delivery address", "wrong address on my order", "edit address"],
+    "a": "Yes, if your order hasn't shipped yet. Go to 'My Orders' and select 'Edit Address', or contact support right away."
+  },
+  {
+    "q": "Do you offer gift cards?",
+    "alt": ["buy a gift card", "gift voucher", "present for a friend card"],
+    "a": "Yes, digital gift cards from $10 to $500 are available and delivered instantly by email."
+  },
+  {
+    "q": "How do I get a refund?",
+    "exact": true,
+    "alt": ["I want my money back", "when will I be refunded", "refund time", "how long do refunds take"],
+    "a": "Refunds are issued to your original payment method within 5-7 business days after we receive your returned item."
+  },
+  {
+    "q": "Is my personal information secure?",
+    "exact": true,
+    "alt": ["is my data safe", "privacy policy", "do you sell my data", "is my card information protected"],
+    "a": "Yes. We use SSL encryption and never sell or share your personal data with third parties."
+  }
+]
